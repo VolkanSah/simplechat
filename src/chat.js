@@ -2,67 +2,15 @@
 import * as React from 'react';
 const { useState } = React;
 
-// Hardcoded Passwörter für dich und deine Kollegen
-const VALID_USERS = {
-  'spieler1': 'pass123',
-  'spieler2': 'pass123',
-  'spieler3': 'pass123'
-};
-
 const Chat = () => {
+  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loginError, setLoginError] = useState('');
-  const [isDragging, setIsDragging] = useState(false);
-  const [position, setPosition] = useState({ x: 20, y: 20 });
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
-  // Drag & Drop Funktionen bleiben gleich
-  const handleMouseDown = (e) => {
-    setIsDragging(true);
-    setStartPos({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y
-    });
-  };
-
-  const handleMouseMove = (e) => {
-    if (isDragging) {
-      setPosition({
-        x: e.clientX - startPos.x,
-        y: e.clientY - startPos.y
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleLogin = (e) => {
+  const handleSend = (e) => {
     e.preventDefault();
-    setLoginError('');
-
-    // Überprüfe ob der Benutzer existiert und das Passwort stimmt
-    if (VALID_USERS[username] === password) {
-      setIsLoggedIn(true);
-      // Login-Zeit als erste System-Nachricht
-      setMessages([{
-        text: `${username} ist dem Chat beigetreten`,
-        user: 'System',
-        time: new Date().toLocaleTimeString()
-      }]);
-    } else {
-      setLoginError('Falscher Benutzername oder Passwort');
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (inputText.trim()) {
+    if (inputText.trim() && username.trim()) {
       const newMessage = {
         text: inputText,
         user: username,
@@ -73,97 +21,75 @@ const Chat = () => {
     }
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUsername('');
-    setPassword('');
-    setMessages([]);
-  };
-
   return (
-    <div 
-      className="fixed bg-gray-800 rounded-lg shadow-lg w-80"
-      style={{ 
-        left: `${position.x}px`, 
-        top: `${position.y}px`,
-        opacity: 0.9
-      }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-    >
-      {!isLoggedIn ? (
-        <form onSubmit={handleLogin} className="p-4 space-y-3">
-          <div>
-            <input
-              type="text"
-              placeholder="Benutzername..."
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full p-2 rounded bg-gray-700 text-white"
-            />
-          </div>
-          <div>
-            <input
-              type="password"
-              placeholder="Passwort..."
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 rounded bg-gray-700 text-white"
-            />
-          </div>
-          {loginError && (
-            <div className="text-red-500 text-sm">{loginError}</div>
-          )}
-          <button 
-            type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-          >
-            Chat beitreten
-          </button>
-        </form>
-      ) : (
-        <div className="flex flex-col h-96">
-          <div className="p-2 bg-gray-700 text-white rounded-t-lg flex justify-between items-center">
-            <span className="cursor-move flex-1">Chat Overlay</span>
-            <button 
-              onClick={handleLogout}
-              className="text-sm bg-red-500 px-2 py-1 rounded hover:bg-red-600"
-            >
-              Logout
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {messages.map((msg, index) => (
-              <div 
-                key={index} 
-                className={`p-2 rounded ${
-                  msg.user === 'System' 
-                    ? 'bg-gray-700 text-center text-sm' 
-                    : msg.user === username 
+    <div>
+      {/* Chat-Button */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-4 right-4 bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-lg"
+      >
+        Chat öffnen
+      </button>
+
+      {/* Chat Modal */}
+      {isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-lg w-full max-w-md flex flex-col">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-4 border-b border-gray-700">
+              <h2 className="text-white text-lg font-bold">Game Chat</h2>
+              <button 
+                onClick={() => setIsOpen(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Username Input wenn noch nicht gesetzt */}
+            {!username && (
+              <div className="p-4">
+                <input
+                  type="text"
+                  placeholder="Dein Name..."
+                  className="w-full p-2 rounded bg-gray-700 text-white"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
+            )}
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 max-h-96">
+              {messages.map((msg, index) => (
+                <div 
+                  key={index}
+                  className={`p-2 rounded ${
+                    msg.user === username 
                       ? 'bg-blue-500 ml-auto' 
                       : 'bg-gray-600'
-                } text-white max-w-[80%]`}
-              >
-                {msg.user !== 'System' && (
+                  } text-white max-w-[80%]`}
+                >
                   <div className="font-bold text-sm">{msg.user}</div>
-                )}
-                <div>{msg.text}</div>
-                <div className="text-xs opacity-75">{msg.time}</div>
-              </div>
-            ))}
-          </div>
+                  <div>{msg.text}</div>
+                  <div className="text-xs opacity-75">{msg.time}</div>
+                </div>
+              ))}
+            </div>
 
-          <form onSubmit={handleSubmit} className="p-2 bg-gray-700 rounded-b-lg">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="Nachricht..."
-              className="w-full p-2 rounded bg-gray-600 text-white"
-            />
-          </form>
+            {/* Message Input */}
+            {username && (
+              <form onSubmit={handleSend} className="p-4 border-t border-gray-700">
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder="Nachricht..."
+                  className="w-full p-2 rounded bg-gray-700 text-white"
+                />
+              </form>
+            )}
+          </div>
         </div>
       )}
     </div>
