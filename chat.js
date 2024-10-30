@@ -2,15 +2,25 @@
 import * as React from 'react';
 const { useState } = React;
 
+// Hardcoded Passwörter für dich und deine Kollegen
+const VALID_USERS = {
+  'spieler1': 'pass123',
+  'spieler2': 'pass123',
+  'spieler3': 'pass123'
+};
+
 const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 20, y: 20 });
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
+  // Drag & Drop Funktionen bleiben gleich
   const handleMouseDown = (e) => {
     setIsDragging(true);
     setStartPos({
@@ -34,8 +44,19 @@ const Chat = () => {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (username.trim()) {
+    setLoginError('');
+
+    // Überprüfe ob der Benutzer existiert und das Passwort stimmt
+    if (VALID_USERS[username] === password) {
       setIsLoggedIn(true);
+      // Login-Zeit als erste System-Nachricht
+      setMessages([{
+        text: `${username} ist dem Chat beigetreten`,
+        user: 'System',
+        time: new Date().toLocaleTimeString()
+      }]);
+    } else {
+      setLoginError('Falscher Benutzername oder Passwort');
     }
   };
 
@@ -52,6 +73,13 @@ const Chat = () => {
     }
   };
 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUsername('');
+    setPassword('');
+    setMessages([]);
+  };
+
   return (
     <div 
       className="fixed bg-gray-800 rounded-lg shadow-lg w-80"
@@ -65,25 +93,45 @@ const Chat = () => {
       onMouseUp={handleMouseUp}
     >
       {!isLoggedIn ? (
-        <form onSubmit={handleLogin} className="p-4">
-          <input
-            type="text"
-            placeholder="Dein Name..."
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full p-2 rounded bg-gray-700 text-white"
-          />
+        <form onSubmit={handleLogin} className="p-4 space-y-3">
+          <div>
+            <input
+              type="text"
+              placeholder="Benutzername..."
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full p-2 rounded bg-gray-700 text-white"
+            />
+          </div>
+          <div>
+            <input
+              type="password"
+              placeholder="Passwort..."
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 rounded bg-gray-700 text-white"
+            />
+          </div>
+          {loginError && (
+            <div className="text-red-500 text-sm">{loginError}</div>
+          )}
           <button 
             type="submit"
-            className="mt-2 w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
           >
             Chat beitreten
           </button>
         </form>
       ) : (
         <div className="flex flex-col h-96">
-          <div className="p-2 bg-gray-700 text-white rounded-t-lg cursor-move">
-            Chat Overlay
+          <div className="p-2 bg-gray-700 text-white rounded-t-lg flex justify-between items-center">
+            <span className="cursor-move flex-1">Chat Overlay</span>
+            <button 
+              onClick={handleLogout}
+              className="text-sm bg-red-500 px-2 py-1 rounded hover:bg-red-600"
+            >
+              Logout
+            </button>
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -91,12 +139,16 @@ const Chat = () => {
               <div 
                 key={index} 
                 className={`p-2 rounded ${
-                  msg.user === username 
-                    ? 'bg-blue-500 ml-auto' 
-                    : 'bg-gray-600'
+                  msg.user === 'System' 
+                    ? 'bg-gray-700 text-center text-sm' 
+                    : msg.user === username 
+                      ? 'bg-blue-500 ml-auto' 
+                      : 'bg-gray-600'
                 } text-white max-w-[80%]`}
               >
-                <div className="font-bold text-sm">{msg.user}</div>
+                {msg.user !== 'System' && (
+                  <div className="font-bold text-sm">{msg.user}</div>
+                )}
                 <div>{msg.text}</div>
                 <div className="text-xs opacity-75">{msg.time}</div>
               </div>
