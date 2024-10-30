@@ -1,0 +1,103 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+          
+      - name: Create package.json if not exists
+        run: |
+          if [ ! -f package.json ]; then
+            echo '{
+              "name": "chat-overlay",
+              "version": "0.1.0",
+              "private": true,
+              "homepage": "${{ github.event.repository.html_url }}",
+              "dependencies": {
+                "react": "^18.2.0",
+                "react-dom": "^18.2.0",
+                "react-scripts": "5.0.1"
+              },
+              "devDependencies": {
+                "autoprefixer": "^10.4.14",
+                "postcss": "^8.4.21",
+                "tailwindcss": "^3.3.1"
+              },
+              "scripts": {
+                "start": "react-scripts start",
+                "build": "react-scripts build",
+                "test": "react-scripts test",
+                "eject": "react-scripts eject"
+              },
+              "eslintConfig": {
+                "extends": ["react-app"]
+              },
+              "browserslist": {
+                "production": [">0.2%", "not dead", "not op_mini all"],
+                "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+              }
+            }' > package.json
+          fi
+          
+      - name: Create PostCSS config if not exists
+        run: |
+          echo 'module.exports = {
+            plugins: {
+              tailwindcss: {},
+              autoprefixer: {},
+            },
+          }' > postcss.config.js
+          
+      - name: Create public/index.html if not exists
+        run: |
+          mkdir -p public
+          echo '<!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>Chat Overlay</title>
+            </head>
+            <body>
+              <div id="root"></div>
+            </body>
+          </html>' > public/index.html
+
+      - name: Install Dependencies
+        run: |
+          npm install
+          npm install -D tailwindcss postcss autoprefixer
+          npx tailwindcss init -p
+
+      - name: Update tailwind.config.js
+        run: |
+          echo 'module.exports = {
+            content: [
+              "./src/**/*.{js,jsx,ts,tsx}",
+            ],
+            theme: {
+              extend: {},
+            },
+            plugins: [],
+          }' > tailwind.config.js
+
+      - name: Build
+        run: npm run build
+        env:
+          CI: false
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@4.1.5
+        with:
+          branch: gh-pages
+          folder: build
